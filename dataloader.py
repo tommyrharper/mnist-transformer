@@ -43,12 +43,13 @@ batch_size = 32
 train_dataloader = DataLoader(four_digit_train, batch_size=batch_size)
 test_dataloader = DataLoader(four_digit_test, batch_size=batch_size)
 
-# Create the four-digit dataset
-print('data downloaded...')
+if __name__ == "__main__":
+    # Create the four-digit dataset
+    print('data downloaded...')
 
-for x, y in test_dataloader:
-    print(f"x/image shape: {x.shape}")
-    print(f"x/image data type: {x.dtype}")
-    print(f"y/label shape: {y.shape}")
-    print(f"y/label data type: {y.dtype}")
-    break
+    for x, y in test_dataloader:
+        print(f"x/image shape: {x.shape}")
+        print(f"x/image data type: {x.dtype}")
+        print(f"y/label shape: {y.shape}")
+        print(f"y/label data type: {y.dtype}")
+        break

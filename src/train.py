@@ -27,7 +27,7 @@ def calculate_loss(images, labels, model, device, loss_fn):
 
     return loss, correct_digits, digits_checked
 
-def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10, use_wandb=False):
+def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10, use_wandb=False, log_epochs=False):
     model = model.to(device)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
@@ -63,10 +63,8 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
             # Log batch metrics
             if use_wandb:
                 wandb.log({
-                    "batch": epoch * len(train_dataloader) + batch_idx,
                     "batch_loss": loss.item(),
                     "batch_accuracy": correct / total,
-                    "learning_rate": optimizer.param_groups[0]['lr']
                 })
 
         avg_train_loss = train_loss / len(train_dataloader)
@@ -87,7 +85,6 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
                 # Log validation batch metrics
                 if use_wandb:
                     wandb.log({
-                        "val_batch": epoch * len(test_dataloader) + batch_idx,
                         "val_batch_loss": loss.item(),
                         "val_batch_accuracy": correct / total
                     })
@@ -101,14 +98,18 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
 
         # Log metrics
         if use_wandb:
-            wandb.log({
-                "epoch": epoch,
-                "train_loss": avg_train_loss,
-                "train_accuracy": train_accuracy,
-                "val_loss": avg_val_loss,
-                "val_accuracy": val_accuracy,
-            })
-            
+            if log_epochs:
+                wandb.log({
+                    "epoch_loss": {
+                        "train": avg_train_loss,
+                        "val": avg_val_loss
+                    },
+                    "epoch_accuracy": {
+                        "train": train_accuracy,
+                        "val": val_accuracy
+                    }
+                })
+
             # Save model checkpoint to wandb
             checkpoint_path = f"model_epoch_{epoch}.pt"
             torch.save(model.state_dict(), checkpoint_path)
@@ -128,12 +129,13 @@ if __name__ == "__main__":
     lr=1e-3
     weight_decay=1e-5
 
-    # Check for --wandb flag and --epochs <NUM_EPOCHS>
+    # Check for --wandb flag and --epochs <NUM_EPOCHS> etc.
     parser = argparse.ArgumentParser()
     parser.add_argument('--wandb', action='store_true', help='Enable Weights & Biases logging')
+    parser.add_argument('--log-epochs', action='store_true', help='Enable Epoch Logging')
     parser.add_argument('--epochs', type=int, default=1, help='Number of epochs to train (default: 1)')
     parser.add_argument('--layers', type=int, default=1, help='Number of layers to use (default: 1)')
-    args = parser.parse_args() 
+    args = parser.parse_args()
 
     model = VisionTransformer(num_layers=args.layers)
     loss_fn = nn.CrossEntropyLoss()
@@ -154,4 +156,4 @@ if __name__ == "__main__":
             }
         )
 
-    train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, args.epochs, args.wandb)
+    train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, args.epochs, args.wandb, args.log_epochs)

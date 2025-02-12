@@ -1,6 +1,8 @@
-from torch.utils.data import DataLoader
+import torch
+from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
+import random
 
 mnist_training_data = datasets.MNIST(
     root="data",
@@ -15,6 +17,28 @@ mnist_test_data = datasets.MNIST(
     download=True,
     transform=ToTensor()
 )
+
+class FourDigitMNIST(Dataset):
+    def __init__(self, mnist_data):
+        self.minst_data = mnist_data
+
+    def __len__(self):
+        return len(self.mnist_dataset) // 4
+    
+    def __getitem__(self, idx):
+        # Get 4 random digits from the dataset
+        indices = random.sample(range(len(self.mnist_dataset)), 4)
+        digits = [self.mnist_dataset[i][0] for i in indices]  # Get images
+        labels = torch.tensor([self.mnist_dataset[i][1] for i in indices])  # Get labels as tensor [4,2,7,1]
+        
+        # Create composite image
+        composite_image = torch.zeros(1, 56, 56)
+        composite_image[:, :28, :28] = digits[0]
+        composite_image[:, :28, 28:] = digits[1]
+        composite_image[:, 28:, :28] = digits[2]
+        composite_image[:, 28:, 28:] = digits[3]
+        
+        return composite_image, labels
 
 batch_size = 32
 

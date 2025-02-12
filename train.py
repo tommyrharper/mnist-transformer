@@ -17,6 +17,8 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0
+        correct_digits = 0
+        total_digits = 0
 
         # for images, labels in train_dataloader:
         for images, labels in tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}"):
@@ -37,11 +39,20 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
 
             train_loss += loss.item()
 
+            # Calculate accuracy
+            for i in range(4):
+                pred = digit_predictions[i].argmax(dim=1)
+                correct_digits += (pred == labels[:, i]).sum().item()
+                total_digits += labels.size(0)
+
         avg_train_loss = train_loss / len(train_dataloader)
+        train_accuracy = correct_digits / total_digits
 
         model.eval()
         val_loss = 0
-        
+        correct_digits = 0
+        total_digits = 0
+
         with torch.no_grad():
             for images, labels in tqdm(test_dataloader, desc=f"Validation Epoch {epoch + 1}"):
                 images = images.to(device)
@@ -55,11 +66,18 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
                 loss = loss / 4
                 val_loss += loss.item()
 
+                # Calculate accuracy
+                for i in range(4):
+                    pred = digit_predictions[i].argmax(dim=1)
+                    correct_digits += (pred == labels[:, i]).sum().item()
+                    total_digits += labels.size(0)
+
         avg_val_loss = val_loss / len(test_dataloader)
+        val_accuracy = correct_digits / total_digits
 
         print(f'Epoch [{epoch+1}/{num_epochs}]')
-        print(f'Train Loss: {avg_train_loss:.4f}')
-        print(f'Val Loss: {avg_val_loss:.4f}\n')
+        print(f'Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}')
+        print(f'Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}\n')
 
         scheduler.step()
 

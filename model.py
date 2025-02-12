@@ -22,5 +22,7 @@ class Encoder(nn.Module):
         logits = self.linear_relu_stack(x)
         return logits
 
-model = Encoder().to(device)
-print(model)
+encoder = Encoder().to(device)
+
+if __name__ == "__main__":
+    print(encoder)

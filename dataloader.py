@@ -23,9 +23,11 @@ batch_size = 32
 train_dataloader = DataLoader(mnist_training_data, batch_size=batch_size)
 test_dataloader = DataLoader(mnist_test_data, batch_size=batch_size)
 
+print('data downloaded...')
+
 for x, y in test_dataloader:
-    print(x.shape)
-    print(x.dtype)
-    print(y.shape)
-    print(y.dtype)
+    print(f"x/image shape: {x.shape}")
+    print(f"x/image data type: {x.dtype}")
+    print(f"y/label shape: {y.shape}")
+    print(f"y/label data type: {y.dtype}")
     break

@@ -19,8 +19,8 @@ mnist_test_data = datasets.MNIST(
 )
 
 class FourDigitMNIST(Dataset):
-    def __init__(self, mnist_data):
-        self.minst_data = mnist_data
+    def __init__(self, mnist_dataset):
+        self.mnist_dataset = mnist_dataset
 
     def __len__(self):
         return len(self.mnist_dataset) // 4
@@ -42,9 +42,13 @@ class FourDigitMNIST(Dataset):
 
 batch_size = 32
 
-train_dataloader = DataLoader(mnist_training_data, batch_size=batch_size)
-test_dataloader = DataLoader(mnist_test_data, batch_size=batch_size)
+four_digit_train = FourDigitMNIST(mnist_training_data)
+four_digit_test = FourDigitMNIST(mnist_test_data)
 
+train_dataloader = DataLoader(four_digit_train, batch_size=batch_size)
+test_dataloader = DataLoader(four_digit_test, batch_size=batch_size)
+
+# Create the four-digit dataset
 print('data downloaded...')
 
 for x, y in test_dataloader:

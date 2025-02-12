@@ -1,11 +1,6 @@
 import torch
 from torch import nn
 
-device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
-
-print(f"Using {device} device")
-
-
 class PatchEmbedder(nn.Module):
     def __init__(self, image_size=56, patch_size=7, embed_dim=256):
         super().__init__()
@@ -88,8 +83,8 @@ class Decoder(nn.Module):
         return x
 
 if __name__ == "__main__":
-    encoder = Encoder().to(device)
-    decoder = Decoder().to(device)
+    encoder = Encoder()
+    decoder = Decoder()
     patch_embedder = PatchEmbedder()
     print(encoder)
     print(decoder)

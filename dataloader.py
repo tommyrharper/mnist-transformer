@@ -25,9 +25,6 @@ class FourDigitMNIST(datasets.MNIST):
         composite_image[:, 28:, 28:] = digits[3]
         
         return composite_image, labels
-    
-
-batch_size = 32
 
 four_digit_train = FourDigitMNIST(
     root="data",
@@ -42,6 +39,7 @@ four_digit_test = FourDigitMNIST(
     transform=ToTensor()
 )
 
+batch_size = 32
 train_dataloader = DataLoader(four_digit_train, batch_size=batch_size)
 test_dataloader = DataLoader(four_digit_test, batch_size=batch_size)
 

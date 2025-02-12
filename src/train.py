@@ -1,7 +1,7 @@
 import torch
 from torch import nn, optim
-from transformer import VisionTransformer
-from dataloader import train_dataloader, test_dataloader
+from src.transformer import VisionTransformer
+from src.dataloader import train_dataloader, test_dataloader
 from tqdm import tqdm
 
 model = VisionTransformer(num_layers=1)

@@ -4,6 +4,7 @@ from src.transformer import VisionTransformer
 from src.dataloader import train_dataloader, test_dataloader
 from tqdm import tqdm
 import argparse
+import wandb
 
 def calculate_loss(images, labels, model, device, loss_fn):
     images = images.to(device)
@@ -26,9 +27,22 @@ def calculate_loss(images, labels, model, device, loss_fn):
 
     return loss, correct_digits, digits_checked
 
-def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10, wandb=False):
+def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10, use_wandb=False):
     model = model.to(device)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
+
+    # Initialize wandb
+    if use_wandb:
+        wandb.init(
+            project="transformer-project",
+            config={
+                "learning_rate": optimizer.param_groups[0]['lr'],
+                "batch_size": len(train_dataloader),
+                "epochs": num_epochs,
+                "num_layers": model.num_layers,
+                "weight_decay": optimizer.param_groups[0]['weight_decay']
+            }
+        )
 
     for epoch in range(num_epochs):
         model.train()
@@ -36,8 +50,7 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         correct_digits = 0
         total_digits = 0
 
-        # for images, labels in train_dataloader:
-        for images, labels in tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}"):
+        for batch_idx, (images, labels) in enumerate(tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}")):
             loss, correct, total = calculate_loss(images, labels, model, device, loss_fn)
             train_loss += loss.item()
             correct_digits += correct
@@ -46,6 +59,15 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            # Log batch metrics
+            if use_wandb:
+                wandb.log({
+                    "batch": epoch * len(train_dataloader) + batch_idx,
+                    "batch_loss": loss.item(),
+                    "batch_accuracy": correct / total,
+                    "learning_rate": optimizer.param_groups[0]['lr']
+                })
 
         avg_train_loss = train_loss / len(train_dataloader)
         train_accuracy = correct_digits / total_digits
@@ -56,11 +78,19 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         total_digits = 0
 
         with torch.no_grad():
-            for images, labels in tqdm(test_dataloader, desc=f"Validation Epoch {epoch + 1}"):
+            for batch_idx, (images, labels) in enumerate(tqdm(test_dataloader, desc=f"Validation Epoch {epoch + 1}")):
                 loss, correct, total = calculate_loss(images, labels, model, device, loss_fn)
                 val_loss += loss.item()
                 correct_digits += correct
                 total_digits += total
+
+                # Log validation batch metrics
+                if use_wandb:
+                    wandb.log({
+                        "val_batch": epoch * len(test_dataloader) + batch_idx,
+                        "val_batch_loss": loss.item(),
+                        "val_batch_accuracy": correct / total
+                    })
 
         avg_val_loss = val_loss / len(test_dataloader)
         val_accuracy = correct_digits / total_digits
@@ -69,12 +99,34 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         print(f'Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}')
         print(f'Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}\n')
 
+        # Log metrics
+        if use_wandb:
+            wandb.log({
+                "epoch": epoch,
+                "train_loss": avg_train_loss,
+                "train_accuracy": train_accuracy,
+                "val_loss": avg_val_loss,
+                "val_accuracy": val_accuracy,
+            })
+            
+            # Save model checkpoint to wandb
+            checkpoint_path = f"model_epoch_{epoch}.pt"
+            torch.save(model.state_dict(), checkpoint_path)
+            wandb.save(checkpoint_path)
+
         scheduler.step()
 
     torch.save(model.state_dict(), 'trained_model.pt')
 
+    # Finish wandb
+    if use_wandb:
+        wandb.finish()
+
 if __name__ == "__main__":
     print('training...')
+
+    lr=1e-3
+    weight_decay=1e-5
 
     # Check for --wandb flag and --epochs <NUM_EPOCHS>
     parser = argparse.ArgumentParser()
@@ -85,8 +137,21 @@ if __name__ == "__main__":
 
     model = VisionTransformer(num_layers=args.layers)
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
+
+    if args.wandb:
+        wandb.init(
+            project="mnist-transformer",
+            name='model-training',
+            config={
+                "architecture": "classic-transformer",
+                "learning_rate": lr,
+                "weight_decay": weight_decay,
+                "num_epochs": args.epochs,
+                "layers": args.layers,
+            }
+        )
 
     train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, args.epochs, args.wandb)

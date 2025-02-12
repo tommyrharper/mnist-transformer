@@ -20,6 +20,7 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
 
         # for images, labels in train_dataloader:
         for images, labels in tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}"):
+            # TODO: remove code duplication from here and in the validation loop
             images = images.to(device)
             labels = labels.to(device)
 
@@ -45,7 +46,24 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
             for images, labels in tqdm(test_dataloader, desc=f"Validation Epoch {epoch + 1}"):
                 images = images.to(device)
                 labels = labels.to(device)
-    pass
+
+                digit_predictions = model(images)
+
+                loss = 0
+                for i in range(4):
+                    loss += loss_fn(digit_predictions[i], labels[:, i])
+                loss = loss / 4
+                val_loss += loss.item()
+
+        avg_val_loss = val_loss / len(test_dataloader)
+
+        print(f'Epoch [{epoch+1}/{num_epochs}]')
+        print(f'Train Loss: {avg_train_loss:.4f}')
+        print(f'Val Loss: {avg_val_loss:.4f}\n')
+
+        scheduler.step()
+
+    torch.save(model.state_dict(), 'trained_model.pt')
 
 
 print('training...')

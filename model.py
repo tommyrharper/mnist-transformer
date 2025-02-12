@@ -6,7 +6,7 @@ device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is
 print(f"Using {device} device")
 
 
-class PatchEmbedding(nn.Module):
+class PatchEmbedder(nn.Module):
     def __init__(self, image_size=56, patch_size=7, embed_dim=256):
         super().__init__()
         self.image_size = image_size
@@ -50,13 +50,13 @@ class Encoder(nn.Module):
         return logits
 
 encoder = Encoder().to(device)
-patch_embedding = PatchEmbedding()
+patch_embedder = PatchEmbedder()
 
 if __name__ == "__main__":
     print(encoder)
 
     batch_size = 4
     sample_images = torch.randn(batch_size, 1, 56, 56)
-    output = patch_embedding(sample_images)
+    output = patch_embedder(sample_images)
     print(f"Input shape: {sample_images.shape}")
     print(f"Output shape: {output.shape}") 

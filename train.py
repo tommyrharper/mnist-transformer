@@ -1,6 +1,6 @@
 from torch import nn, optim
-from model import encoder
-from dataloader import four_digit_train, four_digit_test
+from model import encoder, patch_embedding
+from dataloader import four_digit_train, patch_embedder
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.Adam(encoder.parameters(), lr=1e-3, weight_decay=1e-5)

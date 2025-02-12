@@ -3,7 +3,7 @@ from torch import nn, optim
 from transformer import VisionTransformer
 from dataloader import train_dataloader, test_dataloader
 
-model = VisionTransformer()
+model = VisionTransformer(num_layers=1)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"

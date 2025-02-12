@@ -87,11 +87,10 @@ class Decoder(nn.Module):
 
         return x
 
-encoder = Encoder().to(device)
-decoder = Decoder().to(device)
-patch_embedder = PatchEmbedder()
-
 if __name__ == "__main__":
+    encoder = Encoder().to(device)
+    decoder = Decoder().to(device)
+    patch_embedder = PatchEmbedder()
     print(encoder)
     print(decoder)
     print(patch_embedder)

@@ -19,8 +19,8 @@ class VisionTransformer(nn.Module):
         )
 
         self.blocks = nn.ModuleList([
-            [Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)],
-            [Decoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)]
+            *[Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)],
+            *[Decoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)]
         ])
 
         self.digit_positions = nn.Parameter(torch.randn(4, embed_dim) * 0.02)
@@ -46,4 +46,5 @@ class VisionTransformer(nn.Module):
 
         return digits
 
-print('transformers bro')
+if __name__ == "__main__":
+    print('transformers bro')

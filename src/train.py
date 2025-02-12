@@ -3,12 +3,7 @@ from torch import nn, optim
 from src.transformer import VisionTransformer
 from src.dataloader import train_dataloader, test_dataloader
 from tqdm import tqdm
-
-model = VisionTransformer(num_layers=1)
-loss_fn = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
-device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
+import argparse
 
 def calculate_loss(images, labels, model, device, loss_fn):
     images = images.to(device)
@@ -31,7 +26,7 @@ def calculate_loss(images, labels, model, device, loss_fn):
 
     return loss, correct_digits, digits_checked
 
-def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10):
+def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10, wandb=False):
     model = model.to(device)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
@@ -80,4 +75,18 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
 
 if __name__ == "__main__":
     print('training...')
-    train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 1)
+
+    # Check for --wandb flag and --epochs <NUM_EPOCHS>
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--wandb', action='store_true', help='Enable Weights & Biases logging')
+    parser.add_argument('--epochs', type=int, default=1, help='Number of epochs to train (default: 1)')
+    parser.add_argument('--layers', type=int, default=1, help='Number of layers to use (default: 1)')
+    args = parser.parse_args() 
+
+    model = VisionTransformer(num_layers=args.layers)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using {device} device")
+
+    train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, args.epochs, args.wandb)

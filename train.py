@@ -2,6 +2,7 @@ import torch
 from torch import nn, optim
 from transformer import VisionTransformer
 from dataloader import train_dataloader, test_dataloader
+from tqdm import tqdm
 
 model = VisionTransformer(num_layers=1)
 loss_fn = nn.CrossEntropyLoss()
@@ -17,7 +18,8 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         model.train()
         train_loss = 0
 
-        for images, labels in train_dataloader:
+        # for images, labels in train_dataloader:
+        for images, labels in tqdm(test_dataloader, desc=f"Epoch {epoch + 1}"):
             images = images.to(device)
             labels = labels.to(device)
 

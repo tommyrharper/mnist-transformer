@@ -88,10 +88,13 @@ class Decoder(nn.Module):
         return x
 
 encoder = Encoder().to(device)
+decoder = Decoder().to(device)
 patch_embedder = PatchEmbedder()
 
 if __name__ == "__main__":
     print(encoder)
+    print(decoder)
+    print(patch_embedder)
 
     batch_size = 4
     sample_images = torch.randn(batch_size, 1, 56, 56)

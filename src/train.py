@@ -3,8 +3,8 @@ from torch import nn, optim
 from src.transformer import VisionTransformer
 from src.dataloader import train_dataloader, test_dataloader
 from tqdm import tqdm
+from src.logger import WandbLogger
 import argparse
-import wandb
 
 def calculate_loss(images, labels, model, device, loss_fn):
     images = images.to(device)
@@ -27,31 +27,6 @@ def calculate_loss(images, labels, model, device, loss_fn):
 
     return loss, correct_digits, digits_checked
 
-class WandbLogger:
-    def __init__(self, project, config):
-        self.enabled = True
-        wandb.init(project=project, config=config)
-
-    def log_batch(self, loss, accuracy, is_val=False):
-        prefix = "val_" if is_val else "train_"
-        wandb.log({
-            f"{prefix}batch_loss": loss,
-            f"{prefix}batch_accuracy": accuracy
-        })
-
-    def log_epoch(self, train_loss, train_acc, val_loss, val_acc):
-        wandb.log({
-            "epoch_loss": {"train": train_loss, "val": val_loss},
-            "epoch_accuracy": {"train": train_acc, "val": val_acc}
-        })
-
-    def save_checkpoint(self, model, epoch):
-        path = f"model_epoch_{epoch}.pt"
-        torch.save(model.state_dict(), path)
-        wandb.save(path)
-
-    def finish(self):
-        wandb.finish()
 
 def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10, use_wandb=False, log_epochs=False):
     model = model.to(device)

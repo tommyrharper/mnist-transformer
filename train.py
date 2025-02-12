@@ -19,7 +19,7 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         train_loss = 0
 
         # for images, labels in train_dataloader:
-        for images, labels in tqdm(test_dataloader, desc=f"Epoch {epoch + 1}"):
+        for images, labels in tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}"):
             images = images.to(device)
             labels = labels.to(device)
 
@@ -35,7 +35,16 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
             optimizer.step()
 
             train_loss += loss.item()
-            pass
+
+        avg_train_loss = train_loss / len(train_dataloader)
+
+        model.eval()
+        val_loss = 0
+        
+        with torch.no_grad():
+            for images, labels in tqdm(test_dataloader, desc=f"Validation Epoch {epoch + 1}"):
+                images = images.to(device)
+                labels = labels.to(device)
     pass
 
 

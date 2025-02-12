@@ -30,24 +30,70 @@ class PatchEmbedder(nn.Module):
         return x
 
 class Encoder(nn.Module):
-    def __init__(self, embed_dim=256, num_heads=8):
+    def __init__(self, embed_dim=256, num_heads=8, ff_dim=512):
         super().__init__()
 
         self.attention = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
 
-        self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(28*28, 512),
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.norm2 = nn.LayerNorm(embed_dim)
+
+        self.ff = nn.Sequential(
+            nn.Linear(embed_dim, ff_dim),
             nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 10)
+            nn.Linear(ff_dim, embed_dim)
         )
 
     def forward(self, x):
-        x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
+        attention_output, _ = self.attention(x)
+        x += attention_output
+        x = self.norm1(x)
+
+        ff_output = self.ff(x)
+        x += ff_output
+        x = self.norm2(x)
+
+        return x
+
+# class EncoderBlock(nn.Module):
+#     def __init__(self, 
+#                  embed_dim=256,
+#                  num_heads=8,
+#                  ff_dim=512):          # Smaller dimension
+#         super().__init__()
+        
+#         # Multi-head Self Attention
+#         self.attention = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
+        
+#         # Layer Normalization
+#         self.norm1 = nn.LayerNorm(embed_dim)
+#         self.norm2 = nn.LayerNorm(embed_dim)
+        
+#         # Simpler Feed Forward Network
+#         self.ff = nn.Sequential(
+#             nn.Linear(embed_dim, ff_dim),
+#             nn.ReLU(),
+#             nn.Linear(ff_dim, embed_dim)
+#         )
+        
+#     def forward(self, x):
+#         # Self Attention with residual connection
+#         attention_output, _ = self.attention(x, x, x)
+#         x = x + attention_output
+#         x = self.norm1(x)
+        
+#         # Feed Forward with residual connection
+#         ff_output = self.ff(x)
+#         x = x + ff_output
+#         x = self.norm2(x)
+        
+#         return x
+
+class Decoder(nn.Module):
+    def __init(self, embed_dim=256, num_heads=8):
+        super().__init__()
+
+        self.attention = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
 
 encoder = Encoder().to(device)
 patch_embedder = PatchEmbedder()

@@ -25,19 +25,19 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
 
             digit_predictions = model(images)
 
-            # loss = 0
-            # for i in range(4):
-            #     loss += loss_fn(digit_predictions[i], labels[:, i])
-            # loss = loss / 4
+            loss = 0
+            for i in range(4):
+                loss += loss_fn(digit_predictions[i], labels[:, i])
+            loss = loss / 4
 
-            # optimizer.zero_grad()
-            # loss.backward()
-            # optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-            # train_loss += loss.item()
+            train_loss += loss.item()
             pass
     pass
 
 
 print('training...')
-train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device)
+train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 1)

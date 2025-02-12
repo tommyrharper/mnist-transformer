@@ -20,7 +20,7 @@ class PatchEmbedder(nn.Module):
         patches = patches.contiguous().view(batch_size, self.num_patches, self.patch_size ** 2)
 
         x = self.projection(patches)
-        x += self.pos_embedding
+        x = x + self.pos_embedding
 
         return x
 
@@ -41,11 +41,11 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         attention_output, _ = self.attention(x, x, x)
-        x += attention_output
+        x = x + attention_output
         x = self.norm1(x)
 
         ff_output = self.ff(x)
-        x += ff_output
+        x = x +ff_output
         x = self.norm2(x)
 
         return x
@@ -69,15 +69,15 @@ class Decoder(nn.Module):
 
     def forward(self, x, encoder_output):
         self_attention_output, _ = self.self_attention(x, x, x)
-        x += self_attention_output
+        x = x + self_attention_output
         x = self.norm1(x)
 
         cross_attention_output, _ = self.cross_attention(x, encoder_output, encoder_output)
-        x += cross_attention_output
+        x = x + cross_attention_output
         x = self.norm2(x)
 
         ff_output = self.ff(x)
-        x += ff_output
+        x = x + ff_output
         x = self.norm3(x)
 
         return x

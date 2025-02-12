@@ -5,5 +5,15 @@ device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is
 
 print(f"Using {device} device")
 
-print('yo its model time')
+class NeuralNetwork(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
 
+    def forward(self, x):
+        x = self.flatten(x)
+        return x
+    
+
+model = NeuralNetwork().to(device)
+print(model)

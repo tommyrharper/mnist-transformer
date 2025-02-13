@@ -22,6 +22,9 @@ class WandbLogger:
     def save_checkpoint(self, model, epoch):
         path = f"model_epoch_{epoch}.pt"
         torch.save(model.state_dict(), path)
+        artifact = wandb.Artifact('model-weights', type='model')
+        artifact.add_file(path)
+        wandb.log_artifact(artifact)
         wandb.save(path)
 
     def finish(self):

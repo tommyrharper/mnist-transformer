@@ -26,8 +26,10 @@ class VisionTransformer(nn.Module):
             Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ])
 
-        # Add single decoder
-        self.decoder = Decoder(embed_dim, num_heads, ff_dim)
+        # Multiple decoders
+        self.decoders = nn.ModuleList([
+            Decoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
+        ])
 
         # Separate classifier for each digit position
         self.digit_classifiers = nn.ModuleList([
@@ -50,14 +52,15 @@ class VisionTransformer(nn.Module):
             encoded = encoder(encoded)
         
         # Decode regions
-        x = self.decoder(x, encoded)
+        decoded = x
+        for decoder in self.decoders:
+            decoded = decoder(decoded, encoded)
         
         # Use different regions for different digits
-        # Assuming 8x8 grid of patches
-        tl = x[:, :16].mean(dim=1)  # top-left region
-        tr = x[:, 16:32].mean(dim=1)  # top-right region
-        bl = x[:, 32:48].mean(dim=1)  # bottom-left region
-        br = x[:, 48:].mean(dim=1)  # bottom-right region
+        tl = decoded[:, :16].mean(dim=1)  # top-left region
+        tr = decoded[:, 16:32].mean(dim=1)  # top-right region
+        bl = decoded[:, 32:48].mean(dim=1)  # bottom-left region
+        br = decoded[:, 48:].mean(dim=1)  # bottom-right region
 
         # Predict each digit separately
         digits = [

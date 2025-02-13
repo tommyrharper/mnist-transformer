@@ -19,6 +19,9 @@ class VisionTransformer(nn.Module):
             embed_dim=embed_dim
         )
 
+        self.norm = nn.LayerNorm(embed_dim)
+        self.dropout = nn.Dropout(0.1)
+
         self.encoders = nn.ModuleList([
             Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ])
@@ -30,6 +33,8 @@ class VisionTransformer(nn.Module):
 
     def forward(self, x):
         x = self.patch_embedder(x)
+        x = self.norm(x)
+        x = self.dropout(x)
         
         # Encode patches
         for encoder in self.encoders:

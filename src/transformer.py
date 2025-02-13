@@ -26,6 +26,9 @@ class VisionTransformer(nn.Module):
             Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ])
 
+        # Add single decoder
+        self.decoder = Decoder(embed_dim, num_heads, ff_dim)
+
         # Separate classifier for each digit position
         self.digit_classifiers = nn.ModuleList([
             nn.Sequential(
@@ -42,8 +45,12 @@ class VisionTransformer(nn.Module):
         x = self.dropout(x)
         
         # Encode patches
+        encoded = x
         for encoder in self.encoders:
-            x = encoder(x)
+            encoded = encoder(encoded)
+        
+        # Decode regions
+        x = self.decoder(x, encoded)
         
         # Use different regions for different digits
         # Assuming 8x8 grid of patches

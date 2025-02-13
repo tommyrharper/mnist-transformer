@@ -28,7 +28,12 @@ class VisionTransformer(nn.Module):
 
         # Separate classifier for each digit position
         self.digit_classifiers = nn.ModuleList([
-            nn.Linear(embed_dim, 10) for _ in range(4)
+            nn.Sequential(
+                nn.Linear(embed_dim, ff_dim),
+                nn.GELU(),
+                nn.Dropout(0.1),
+                nn.Linear(ff_dim, 10)
+            ) for _ in range(4)
         ])
 
     def forward(self, x):
@@ -46,7 +51,7 @@ class VisionTransformer(nn.Module):
         tr = x[:, 16:32].mean(dim=1)  # top-right region
         bl = x[:, 32:48].mean(dim=1)  # bottom-left region
         br = x[:, 48:].mean(dim=1)  # bottom-right region
-        
+
         # Predict each digit separately
         digits = [
             self.digit_classifiers[0](tl),

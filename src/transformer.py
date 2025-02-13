@@ -19,32 +19,37 @@ class VisionTransformer(nn.Module):
             embed_dim=embed_dim
         )
 
-        self.blocks = nn.ModuleList([
-            *[Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)],
-            *[Decoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)]
+        self.encoders = nn.ModuleList([
+            Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ])
 
-        self.digit_positions = nn.Parameter(torch.randn(4, embed_dim) * 0.02)
-
-        self.classifier = nn.Linear(embed_dim, 10)
+        # Separate classifier for each digit position
+        self.digit_classifiers = nn.ModuleList([
+            nn.Linear(embed_dim, 10) for _ in range(4)
+        ])
 
     def forward(self, x):
-        encoded = self.patch_embedder(x)
-
-        for block in self.blocks[:len(self.blocks)//2]:
-            encoded = block(encoded)
-
-        batch_size = x.shape[0]
-        decoded = self.digit_positions.unsqueeze(0).expand(batch_size, -1, -1)
-
-        for block in self.blocks[len(self.blocks)//2:]:
-            decoded = block(decoded, encoded)
-
-        digits = []
-        for i in range(4):
-            digit = self.classifier(decoded[:, i])
-            digits.append(digit)
-
+        x = self.patch_embedder(x)
+        
+        # Encode patches
+        for encoder in self.encoders:
+            x = encoder(x)
+        
+        # Use different regions for different digits
+        # Assuming 8x8 grid of patches
+        tl = x[:, :16].mean(dim=1)  # top-left region
+        tr = x[:, 16:32].mean(dim=1)  # top-right region
+        bl = x[:, 32:48].mean(dim=1)  # bottom-left region
+        br = x[:, 48:].mean(dim=1)  # bottom-right region
+        
+        # Predict each digit separately
+        digits = [
+            self.digit_classifiers[0](tl),
+            self.digit_classifiers[1](tr),
+            self.digit_classifiers[2](bl),
+            self.digit_classifiers[3](br)
+        ]
+        
         return digits
 
 if __name__ == "__main__":

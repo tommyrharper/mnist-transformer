@@ -6,12 +6,28 @@ from tqdm import tqdm
 from src.logger import WandbLogger
 import argparse
 
+debug_mode = False
+
+def debug_printer(digit_predictions, labels, num_to_show=32):
+    # Debug predictions
+    if torch.rand(1) < 0.01:  # Print 1% of batches
+        print("\nDebug Predictions:")
+        print(f"Predictions shape: {digit_predictions[0].shape}")  # Should be [batch_size, 10]
+        
+        for i in range(num_to_show):  # loop through batch
+            pred = [digit_predictions[j][i].argmax().item() for j in range(4)]
+            true = labels[i].tolist()
+            print(f"Image {i}: Pred {pred} True {true}")
+
+
 def do_prediction_and_calculate_loss(images, labels, model, device, loss_fn):
     images = images.to(device)
     labels = labels.to(device)
 
     digit_predictions = model(images)
 
+    if debug_mode: debug_printer(digit_predictions, labels)
+    
     loss = 0
     for i in range(4):
         loss += loss_fn(digit_predictions[i], labels[:, i])

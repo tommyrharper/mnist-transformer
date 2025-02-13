@@ -45,7 +45,7 @@ class Encoder(nn.Module):
         x = self.norm1(x)
 
         ff_output = self.ff(x)
-        x = x +ff_output
+        x = x + ff_output
         x = self.norm2(x)
 
         return x

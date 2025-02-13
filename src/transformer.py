@@ -11,7 +11,7 @@ class VisionTransformer(nn.Module):
                  num_layers=6,
                  ff_dim=512):
         super().__init__()
-        self.num_layers = num_layers  # Store as attribute
+        self.num_layers = num_layers
 
         self.patch_embedder = PatchEmbedder(
             image_size=image_size,

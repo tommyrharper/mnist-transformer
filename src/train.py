@@ -6,7 +6,7 @@ from tqdm import tqdm
 from src.logger import WandbLogger
 import argparse
 
-def calculate_loss(images, labels, model, device, loss_fn):
+def do_prediction_and_calculate_loss(images, labels, model, device, loss_fn):
     images = images.to(device)
     labels = labels.to(device)
 
@@ -47,7 +47,7 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         correct_digits = total_digits = 0
 
         for images, labels in tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}"):
-            loss, correct, total = calculate_loss(images, labels, model, device, loss_fn)
+            loss, correct, total = do_prediction_and_calculate_loss(images, labels, model, device, loss_fn)
             train_loss += loss.item()
             correct_digits += correct
             total_digits += total
@@ -65,7 +65,7 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
 
         with torch.no_grad():
             for images, labels in tqdm(test_dataloader, desc=f"Val Epoch {epoch + 1}"):
-                loss, correct, total = calculate_loss(images, labels, model, device, loss_fn)
+                loss, correct, total = do_prediction_and_calculate_loss(images, labels, model, device, loss_fn)
                 val_loss += loss.item()
                 val_correct += correct
                 val_total += total

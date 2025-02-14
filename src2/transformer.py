@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from src.models import PatchEmbedder, Encoder, Decoder
+from src2.models import PatchEmbedder, Encoder, Decoder
 
 class VisionTransformer(nn.Module):
     def __init__(self,
@@ -26,51 +26,60 @@ class VisionTransformer(nn.Module):
             Encoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ])
 
-        # Multiple decoders
-        self.decoders = nn.ModuleList([
-            Decoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
-        ])
-
         # Separate classifier for each digit position
-        self.digit_classifiers = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(embed_dim, ff_dim),
-                nn.GELU(),
-                nn.Dropout(0.1),
-                nn.Linear(ff_dim, 10)
-            ) for _ in range(4)
-        ])
+        self.digit_classifier = nn.Sequential(
+            nn.Linear(embed_dim, ff_dim),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(ff_dim, 10)  # outputs logits for digits 0-9
+        )
+        
+        self.position_classifier = nn.Sequential(
+            nn.Linear(embed_dim, ff_dim),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(ff_dim, 4)  # outputs logits for positions 0-3
+        )
+
+        self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
 
     def forward(self, x):
         x = self.patch_embedder(x)
+        
+        # Prepend CLS token to sequence
+        cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
+        
         x = self.norm(x)
         x = self.dropout(x)
         
-        # Encode patches
-        encoded = x
         for encoder in self.encoders:
-            encoded = encoder(encoded)
+            x = encoder(x)
         
-        # Decode regions
-        decoded = x
-        for decoder in self.decoders:
-            decoded = decoder(decoded, encoded)
+        # Use CLS token for classification
+        x = x[:, 0]  # take first token [batch_size, embed_dim]
         
-        # Use different regions for different digits
-        tl = decoded[:, :16].mean(dim=1)  # top-left region
-        tr = decoded[:, 16:32].mean(dim=1)  # top-right region
-        bl = decoded[:, 32:48].mean(dim=1)  # bottom-left region
-        br = decoded[:, 48:].mean(dim=1)  # bottom-right region
-
-        # Predict each digit separately
-        digits = [
-            self.digit_classifiers[0](tl),
-            self.digit_classifiers[1](tr),
-            self.digit_classifiers[2](bl),
-            self.digit_classifiers[3](br)
-        ]
+        # Return logits instead of argmax
+        digit_logits = self.digit_classifier(x)      # [batch_size, 10]
+        position_logits = self.position_classifier(x) # [batch_size, 4]
         
-        return digits
+        return digit_logits, position_logits
 
 if __name__ == "__main__":
-    print('transformers bro')
+    transformer = VisionTransformer()
+
+    batch_size = 4
+    sample_images = torch.randn(batch_size, 56, 56)
+
+    digit_logits, position_logits = transformer(sample_images)
+    print(f"Input shape: {sample_images.shape}")
+    print(f"Output digit shape: {digit_logits.shape}") 
+    print(f"Output digit: {digit_logits[0]}")
+    print(f"Output digit: {digit_logits[1]}")
+    print(f"Output digit: {digit_logits[2]}")
+    print(f"Output digit: {digit_logits[3]}")
+    print(f"Output position shape: {position_logits.shape}") 
+    print(f"Output position: {position_logits[0]}")
+    print(f"Output position: {position_logits[1]}")
+    print(f"Output position: {position_logits[2]}")
+    print(f"Output position: {position_logits[3]}")

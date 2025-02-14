@@ -15,19 +15,19 @@ class FourDigitMNIST(datasets.MNIST):
         # Get 4 random digits from the dataset
         indice = random.sample(range(len(self.data)), 1)
         digit = self.data[indice]  # Get image
-        label = torch.tensor(self.targets[indice])  # Get label as tensor [3]
+        label = self.targets[indice].squeeze()  # Get label as tensor [3]
         
 
-        position = random.randint(0, 3)
-        # Create composite image
-        composite_image = torch.zeros(1, 56, 56)
+        position = torch.tensor(random.randint(0, 3))
+        # Create composite image without extra channel dim
+        composite_image = torch.zeros(56, 56)  # removed the 1 channel dim
 
-        if position == 0: composite_image[:, :28, :28] = digit
-        elif position == 1: composite_image[:, :28, 28:] = digit
-        elif position == 2: composite_image[:, 28:, :28] = digit
-        elif position == 3: composite_image[:, 28:, 28:] = digit
+        if position == 0: composite_image[:28, :28] = digit.squeeze()
+        elif position == 1: composite_image[:28, 28:] = digit.squeeze()
+        elif position == 2: composite_image[28:, :28] = digit.squeeze()
+        elif position == 3: composite_image[28:, 28:] = digit.squeeze()
         
-        return composite_image, label, position
+        return composite_image, label.squeeze(), position
 
 four_digit_train = FourDigitMNIST(
     root="data",
@@ -55,13 +55,14 @@ if __name__ == "__main__":
         print(f"x/image data type: {x.dtype}")
         print(f"y/label shape: {y.shape}")
         print(f"y/label data type: {y.dtype}")
-        print(f"z/position: {z}")
+        print(f"z/position shape: {z.shape}")
+        print(f"z/position data type: {z.dtype}")
 
-        print("\nPrinting individual elements in batch:")
-        for i in range(batch_size):
-            print(f"Sample {i}:")
-            print(f"Image shape: {x[i].shape}")
-            print(f"Label: {y[i].item()}")
-            print(f"Position: {z[i].item()}\n")
+        # print("\nPrinting individual elements in batch:")
+        # for i in range(batch_size):
+        #     print(f"Sample {i}:")
+        #     print(f"Image shape: {x[i].shape}")
+        #     print(f"Label: {y[i].item()}")
+        #     print(f"Position: {z[i].item()}\n")
             
         break

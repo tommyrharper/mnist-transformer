@@ -13,15 +13,15 @@ class PatchEmbedder(nn.Module):
         self.pos_embedding = nn.Parameter(torch.rand(1, self.num_patches, embed_dim))
 
     def forward(self, x):
-        # Input: (batch_size, channels=1, height=56, width=56)
+        # Input: (batch_size, height=56, width=56)
         batch_size = x.shape[0]
-
-        patches = x.unfold(2, self.patch_size, self.patch_size).unfold(3, self.patch_size, self.patch_size)
+        
+        patches = x.unfold(1, self.patch_size, self.patch_size).unfold(2, self.patch_size, self.patch_size)
         patches = patches.contiguous().view(batch_size, self.num_patches, self.patch_size ** 2)
-
+        
         x = self.projection(patches)
         x = x + self.pos_embedding
-
+        
         return x
 
 class Encoder(nn.Module):
@@ -86,12 +86,15 @@ if __name__ == "__main__":
     encoder = Encoder()
     decoder = Decoder()
     patch_embedder = PatchEmbedder()
-    print(encoder)
-    print(decoder)
-    print(patch_embedder)
 
     batch_size = 4
-    sample_images = torch.randn(batch_size, 1, 56, 56)
+    sample_images = torch.randn(batch_size, 56, 56)
     output = patch_embedder(sample_images)
     print(f"Input shape: {sample_images.shape}")
     print(f"Output shape: {output.shape}") 
+
+    encoder_output = encoder(output)
+    print(f"Encoder output shape: {encoder_output.shape}")
+
+    decoder_output = decoder(output, encoder_output)
+    print(f"Decoder output shape: {decoder_output.shape}")

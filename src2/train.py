@@ -1,54 +1,55 @@
 import torch
 from torch import nn, optim
-from src.transformer import VisionTransformer
-from src.dataloader import train_dataloader, test_dataloader
+from src2.transformer import VisionTransformer
+from src2.dataloader import train_dataloader, test_dataloader
 from tqdm import tqdm
-from src.logger import WandbLogger
+from src2.logger import WandbLogger
 import argparse
 
 debug_mode = False
 
-def debug_printer(digit_predictions, labels, num_to_show=32):
-    # Debug predictions
-    if torch.rand(1) < 0.01:  # Print 1% of batches
-        print("\nDebug Predictions:")
-        print(f"Predictions shape: {digit_predictions[0].shape}")  # Should be [batch_size, 10]
-        
-        for i in range(num_to_show):  # loop through batch
-            pred = [digit_predictions[j][i].argmax().item() for j in range(4)]
-            true = labels[i].tolist()
-            print(f"Image {i}: Pred {pred} True {true}")
+def debug_printer(digit_predictions, position_predictions, labels, positions):
+    print("\nPrediction Check:")
+    for i in range(labels.size(0)):
+        print(f"Sample {i}:")
+        print(f"Digit - Pred: {digit_predictions[i].item()}, True: {labels[i].item()}")
+        print(f"Position - Pred: {position_predictions[i].item()}, True: {positions[i].item()}")
+        print(f"Correct? Digit: {digit_predictions[i] == labels[i]}, Position: {position_predictions[i] == positions[i]}")
 
 
-def do_prediction_and_calculate_loss(images, labels, model, device, loss_fn):
+def do_prediction_and_calculate_loss(images, labels, positions, model, device, loss_fn):
     images = images.to(device)
     labels = labels.to(device)
+    positions = positions.to(device)
 
-    digit_predictions = model(images)
+    digit_logits, position_logits = model(images)  # Get logits
 
-    if debug_mode: debug_printer(digit_predictions, labels)
-    
-    loss = 0
-    for i in range(4):
-        loss += loss_fn(digit_predictions[i], labels[:, i])
-    loss = loss / 4
+    # Calculate losses using CrossEntropyLoss
+    digit_loss = loss_fn(digit_logits, labels)  # expects [batch_size, num_classes], [batch_size]
+    position_loss = loss_fn(position_logits, positions)
+    loss = (digit_loss + position_loss) / 2
 
-    correct_digits = 0
-    digits_checked = 0
+    # Get predictions for accuracy calculation
+    digit_predictions = digit_logits.argmax(dim=1)
+    position_predictions = position_logits.argmax(dim=1)
+
     # Calculate accuracy
-    for i in range(4):
-        pred = digit_predictions[i].argmax(dim=1)
-        correct_digits += (pred == labels[:, i]).sum().item()
-        digits_checked += labels.size(0)
+    correct_digits = (digit_predictions == labels).sum().item()
+    correct_positions = (position_predictions == positions).sum().item()
+    total = labels.size(0)
 
-    return loss, correct_digits, digits_checked
+    # Debug print for predictions
+    if debug_mode:
+        debug_printer(digit_predictions, position_predictions, labels, positions)
+
+    return loss, correct_digits + correct_positions, total * 2
 
 
 def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, num_epochs=10, use_wandb=False, log_epochs=False):
     model = model.to(device)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
-    logger = WandbLogger("mnist-transformer", {
+    logger = WandbLogger("mnist-transformer-2", {
         "learning_rate": optimizer.param_groups[0]['lr'],
         "batch_size": len(train_dataloader),
         "epochs": num_epochs,
@@ -61,9 +62,9 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         model.train()
         train_loss = 0
         correct_digits = total_digits = 0
+        for images, labels, positions in tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}"):
 
-        for images, labels in tqdm(train_dataloader, desc=f"Train Epoch {epoch + 1}"):
-            loss, correct, total = do_prediction_and_calculate_loss(images, labels, model, device, loss_fn)
+            loss, correct, total = do_prediction_and_calculate_loss(images, labels, positions, model, device, loss_fn)
             train_loss += loss.item()
             correct_digits += correct
             total_digits += total
@@ -80,8 +81,8 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
         val_correct = val_total = 0
 
         with torch.no_grad():
-            for images, labels in tqdm(test_dataloader, desc=f"Val Epoch {epoch + 1}"):
-                loss, correct, total = do_prediction_and_calculate_loss(images, labels, model, device, loss_fn)
+            for images, labels, positions in tqdm(test_dataloader, desc=f"Val Epoch {epoch + 1}"):
+                loss, correct, total = do_prediction_and_calculate_loss(images, labels, positions, model, device, loss_fn)
                 val_loss += loss.item()
                 val_correct += correct
                 val_total += total
@@ -104,7 +105,7 @@ def train(train_dataloader, test_dataloader, model, loss_fn, optimizer, device, 
 
         scheduler.step()
 
-    torch.save(model.state_dict(), 'trained_model.pt')
+    torch.save(model.state_dict(), 'trained_model_2.pt')
     if logger: logger.finish()
 
 if __name__ == "__main__":

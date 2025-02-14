@@ -13,7 +13,7 @@ class PatchEmbedder(nn.Module):
         self.pos_embedding = nn.Parameter(torch.rand(1, self.num_patches, embed_dim))
 
     def forward(self, x):
-#         # Input: (batch_size, channels=1, height=56, width=56)
+        # Input: (batch_size, channels=1, height=56, width=56)
         batch_size = x.shape[0]
 
         patches = x.unfold(2, self.patch_size, self.patch_size).unfold(3, self.patch_size, self.patch_size)

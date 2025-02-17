@@ -11,7 +11,7 @@ conda activate mnist-transformer
 
 ## How I initially created the environment
 
-2. Create environment and export env info
+1. Create environment and export env info
 ```bash
 conda create --name mnist-tranformer python=3.10 -y
 # install all the needed tools
